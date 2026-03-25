@@ -11,9 +11,11 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
+
 require_once __DIR__ . '/classes/FrequentlyBoughtAnalyzer.php';
 
-class Mjfrequentlybought extends Module
+class Mjfrequentlybought extends Module implements WidgetInterface
 {
     public function __construct()
     {
@@ -389,9 +391,14 @@ class Mjfrequentlybought extends Module
         return $this->renderFbtSection($params);
     }
 
-    public function renderWidget(string $hookName, array $configuration): string
+    public function renderWidget($hookName, array $configuration): string
     {
         return $this->renderFbtSection($configuration);
+    }
+
+    public function getWidgetVariables($hookName, array $configuration): array
+    {
+        return [];
     }
 
     private function renderFbtSection(array $params): string
@@ -400,7 +407,14 @@ class Mjfrequentlybought extends Module
             return '';
         }
 
-        $idProduct = (int) ($params['product']['id_product'] ?? ($params['product']->id ?? Tools::getValue('id_product')));
+        $product = $params['product'] ?? null;
+        if (is_array($product)) {
+            $idProduct = (int) ($product['id_product'] ?? 0);
+        } elseif (is_object($product)) {
+            $idProduct = (int) ($product->id ?? $product->id_product ?? 0);
+        } else {
+            $idProduct = (int) Tools::getValue('id_product');
+        }
 
         if (!$idProduct) {
             return '';

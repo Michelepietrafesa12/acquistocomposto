@@ -160,6 +160,7 @@ class FrequentlyBoughtAnalyzer
     private function enrichProducts(array $products, int $idLang, int $idShop, bool $showPrices, bool $showDiscounts): array
     {
         $enriched = [];
+        $link = Context::getContext()->link;
 
         foreach ($products as $row) {
             $idProduct = (int) $row['id_product'];
@@ -174,17 +175,19 @@ class FrequentlyBoughtAnalyzer
             $imageUrl = '';
 
             if ($imageId) {
-                $image = new Image($imageId);
-                $imageUrl = _PS_BASE_URL_ . _THEME_PROD_DIR_ . $image->getExistingImgPath() . '-home_default.jpg';
+                $rewrite = is_array($product->link_rewrite) ? ($product->link_rewrite[$idLang] ?? reset($product->link_rewrite)) : $product->link_rewrite;
+                $imageUrl = $link->getImageLink($rewrite, (int) $imageId, 'home_default');
             }
 
+            $specificPriceOutput = null;
             $priceWithTax = Product::getPriceStatic($idProduct, true, null, 6, null, false, true, 1, false, null, null, null, $specificPriceOutput);
             $priceWithoutReduction = Product::getPriceStatic($idProduct, true, null, 6, null, false, false);
 
             $hasDiscount = $priceWithoutReduction > $priceWithTax;
 
-            $link = Context::getContext()->link;
             $productUrl = $link->getProductLink($idProduct, $product->link_rewrite, null, null, $idLang, $idShop);
+
+            $priceFormatted = Tools::displayPrice($priceWithTax);
 
             $item = [
                 'id_product' => $idProduct,
@@ -193,14 +196,9 @@ class FrequentlyBoughtAnalyzer
                 'link' => $productUrl,
                 'image_url' => $imageUrl,
                 'price_amount' => round($priceWithTax, 2),
+                'price' => $priceFormatted,
+                'show_price' => (bool) $showPrices,
             ];
-
-            if ($showPrices) {
-                $item['price'] = Tools::displayPrice($priceWithTax);
-                $item['show_price'] = true;
-            } else {
-                $item['show_price'] = false;
-            }
 
             if ($showDiscounts && $hasDiscount) {
                 $item['price_original'] = Tools::displayPrice($priceWithoutReduction);
@@ -228,6 +226,8 @@ class FrequentlyBoughtAnalyzer
             return;
         }
 
+        // Ensure all IDs are integers
+        $productIds = array_map('intval', $productIds);
         $now = date('Y-m-d H:i:s');
 
         foreach ($productIds as $idA) {
@@ -235,9 +235,6 @@ class FrequentlyBoughtAnalyzer
                 if ($idA === $idB) {
                     continue;
                 }
-
-                $idA = (int) $idA;
-                $idB = (int) $idB;
 
                 $existing = Db::getInstance()->getValue(
                     'SELECT `id_association`

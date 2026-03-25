@@ -28,7 +28,9 @@ class MjfrequentlyboughtCronModuleFrontController extends ModuleFrontController
             exit;
         }
 
-        require_once _PS_MODULE_DIR_ . 'mjfrequentlybought/classes/FrequentlyBoughtAnalyzer.php';
+        if (!class_exists('FrequentlyBoughtAnalyzer')) {
+            require_once _PS_MODULE_DIR_ . 'mjfrequentlybought/classes/FrequentlyBoughtAnalyzer.php';
+        }
 
         $analyzer = new FrequentlyBoughtAnalyzer();
         $count = $analyzer->rebuildAllAssociations();

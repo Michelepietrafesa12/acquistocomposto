@@ -132,7 +132,6 @@ class MjfrequentlyboughtAjaxModuleFrontController extends ModuleFrontController
         }
 
         // Get updated cart summary
-        $cartProducts = $cart->getProducts(true);
         $cartTotal = $cart->getOrderTotal(true, Cart::BOTH);
         $cartCount = $cart->nbProducts();
 
